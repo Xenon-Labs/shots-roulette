@@ -1,6 +1,6 @@
-# shots_roulette2
+# shots_roulette
 
-Roulette shots drinking game
+A new Flutter project.
 
 ## Getting Started
 

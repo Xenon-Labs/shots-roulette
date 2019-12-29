@@ -1,4 +1,4 @@
-package com.xenonlabs.shots_roulette2
+package com.xenonlabs.shots_roulette
 
 import android.os.Bundle
 
