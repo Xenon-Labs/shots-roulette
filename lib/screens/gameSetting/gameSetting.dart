@@ -52,17 +52,19 @@ class _GameSettingState extends State<GameSetting> {
                   child: NumberPicker.integer(
                     decoration: _decoration,
                     initialValue: _currentIntValue,
-                    minValue: 1,
-                    maxValue: 10,
+                    minValue: 2,
+                    maxValue: 9,
                     step: 1,
                     onChanged: (value) =>
                         setState(() => _currentIntValue = value),
                   )),
               DefaultRaisedButton(
                   title: 'Ready to Go!',
-                  onPressed: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => GameSession
-                        (horizontalShotsNum: _currentIntValue))))
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => GameSession(
+                              horizontalShotsNum: _currentIntValue - 1))))
             ],
           ),
         ),
