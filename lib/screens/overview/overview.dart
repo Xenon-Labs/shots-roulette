@@ -10,6 +10,12 @@ class Overview extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            Text(
+              "SHOTS ROULETTE!",
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 50),
+            ),
+            Padding(padding: EdgeInsets.all(20)),
             DefaultRaisedButton(
               onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (context) => GameSetting())),

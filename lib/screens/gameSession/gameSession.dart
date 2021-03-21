@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:shots_roulette/sharedWidgets/defaultDialog.dart';
 
 List<String> drinkWords = [
   "DRINK!",
@@ -25,43 +26,64 @@ class GameSession extends StatefulWidget {
 
 class _GameSessionState extends State<GameSession>
     with TickerProviderStateMixin {
-  AnimationController _animationController;
-  bool isPlaying = false;
   var arraySpots;
   int numOfSpotsLeft;
   double height;
   double width;
   int randomCol;
   int randomRow;
+  Color colorFull = Color(0xFFe0f2f1);
+  Color colorEmpty = Colors.white;
+  Random rnd = new Random();
+  bool inProgress = false;
 
-  @override
-  void initState() {
-    super.initState();
-    //TODO: show to do dialog
-    numOfSpotsLeft = widget.horizontalShotsNum * 2 + 2;
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(milliseconds: 300));
+  void init() {
+    numOfSpotsLeft = widget.horizontalShotsNum * 2 + 4;
+    //true = empty
+    //false = spinning
+    //null = full
     arraySpots = List.generate(widget.horizontalShotsNum + 2, (i) => List(2),
         growable: false);
   }
 
-  void _handleOnPressed() {
+  @override
+  void initState() {
+    super.initState();
+    init();
+  }
+
+  void _handleOnPressed() async {
+    inProgress = true;
     if (randomCol != null && randomRow != null) {
       arraySpots[randomRow][randomCol] = false;
     }
+    await rotateColor(rnd.nextInt(5) + 2);
     randomShot();
+    inProgress = false;
+  }
 
-    setState(() {
-      isPlaying = !isPlaying;
-      isPlaying
-          ? _animationController.forward()
-          : _animationController.reverse();
-    });
+  Future<void> rotateColor(int numberOfTimes) async {
+    for (int times = 0; times < numberOfTimes; times++) {
+      for (int j = 1; j >= 0; j--) {
+        for (int i = j == 1 ? 0 : widget.horizontalShotsNum + 1;
+            j == 1 ? i < widget.horizontalShotsNum + 2 : i >= 0;
+            j == 1 ? i++ : i--) {
+          if (arraySpots[i][j] == null) {
+            setState(() {
+              arraySpots[i][j] = false;
+            });
+            await Future.delayed(const Duration(milliseconds: 70), () {});
+
+            setState(() {
+              arraySpots[i][j] = null;
+            });
+          }
+        }
+      }
+    }
   }
 
   void randomShot() {
-    Random rnd = new Random();
-
     randomCol = rnd.nextInt(2);
     randomRow = rnd.nextInt(widget.horizontalShotsNum + 2);
     if (arraySpots[randomRow][randomCol] != null ||
@@ -75,7 +97,23 @@ class _GameSessionState extends State<GameSession>
     });
     numOfSpotsLeft--;
     if (numOfSpotsLeft == 0) {
-      // TODO: play
+      showDialog<dynamic>(
+          context: context,
+          builder: (BuildContext context) {
+            return DefaultDialog(
+                child: Text(
+                  "Play Again? \n ... or go home",
+                  style: Theme.of(context).textTheme.headline2,
+                  textAlign: TextAlign.center,
+                ),
+                buttonText: "Lets go!",
+                buttonAction: () {
+                  setState(() {
+                    init();
+                  });
+                  Navigator.of(context).pop();
+                });
+          });
     }
   }
 
@@ -94,16 +132,8 @@ class _GameSessionState extends State<GameSession>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        first == null
-            ? getFullShot()
-            : first
-                ? drinkShot()
-                : getEmptyShot(),
-        second == null
-            ? getFullShot()
-            : second
-                ? drinkShot()
-                : getEmptyShot()
+        getFullShot(width, height, widget.horizontalShotsNum + 2, first),
+        getFullShot(width, height, widget.horizontalShotsNum + 2, second)
       ],
     );
   }
@@ -112,51 +142,28 @@ class _GameSessionState extends State<GameSession>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        first == null
-            ? getFullShot()
-            : first
-                ? drinkShot()
-                : getEmptyShot(),
-        second == null
-            ? getFullShot()
-            : second
-                ? drinkShot()
-                : getEmptyShot()
+        getFullShot(width, height, widget.horizontalShotsNum + 2, first),
+        getFullShot(width, height, widget.horizontalShotsNum + 2, second)
       ],
     );
   }
 
-  Container getEmptyShot() {
-    return Container(
+  AnimatedContainer getFullShot(
+      double width, double height, int rows, bool value) {
+    return AnimatedContainer(
+        duration: Duration(milliseconds: 70),
         width: width / 3,
-        height: height / (widget.horizontalShotsNum + 2),
+        height: height / rows,
+        child: value != null && value == true
+            ? Center(
+                child: Text(
+                (drinkWords..shuffle()).first,
+                textAlign: TextAlign.center,
+              ))
+            : Container(),
         decoration: BoxDecoration(
-            border: Border.all(color: Color(0xFFe0f2f1)),
             shape: BoxShape.circle,
-            color: Colors.white));
-  }
-
-  Container drinkShot() {
-    return Container(
-        width: width / 3,
-        height: height / (widget.horizontalShotsNum + 2),
-        child: Center(
-            child: Text(
-          (drinkWords..shuffle()).first,
-          textAlign: TextAlign.center,
-        )),
-        decoration: BoxDecoration(
-            border: Border.all(color: Color(0xFFe0f2f1)),
-            shape: BoxShape.circle,
-            color: Colors.white));
-  }
-
-  Container getFullShot() {
-    return Container(
-        width: width / 3,
-        height: height / (widget.horizontalShotsNum + 2),
-        decoration:
-            BoxDecoration(shape: BoxShape.circle, color: Color(0xFFe0f2f1)));
+            color: value == null ? colorFull : colorEmpty));
   }
 
   @override
@@ -170,18 +177,12 @@ class _GameSessionState extends State<GameSession>
         children: [
           Center(
             child: RaisedButton(
-              child: Text("Spin"),
-              onPressed: () => _handleOnPressed(),
-            ),
+                child: Text("Spin"),
+                onPressed: inProgress ? null : _handleOnPressed),
           ),
           Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: getRows(),
-            // children: <Widget>[
-            //   AnimatedIcon(
-            //       icon: AnimatedIcons.arrow_menu, progress: _animationController),
-
-            // ],
           ),
         ],
       )),
